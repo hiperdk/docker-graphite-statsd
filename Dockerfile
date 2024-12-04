@@ -1,4 +1,4 @@
-ARG BASEIMAGE=alpine:3
+ARG BASEIMAGE=alpine:latest
 FROM $BASEIMAGE as base
 LABEL maintainer="Denys Zhdanov <denis.zhdanov@gmail.com>"
 LABEL org.opencontainers.image.source https://github.com/graphite-project/docker-graphite-statsd
