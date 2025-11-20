@@ -1,4 +1,4 @@
-ARG BASEIMAGE=alpine:latest
+ARG BASEIMAGE=alpine:3
 FROM $BASEIMAGE as base
 LABEL maintainer="Denys Zhdanov <denis.zhdanov@gmail.com>"
 LABEL org.opencontainers.image.source https://github.com/graphite-project/docker-graphite-statsd
@@ -68,52 +68,49 @@ RUN true \
  && virtualenv -p python3 /opt/graphite \
  && . /opt/graphite/bin/activate \
  && echo 'INPUT ( libldap.so )' > /usr/lib/libldap_r.so \
- && pip install \
+ && pip install --no-cache-dir \
       cairocffi==1.1.0 \
       django==4.2.15 \
       django-tagging==0.5.0 \
       django-statsd-mozilla \
-      fadvise \
       gunicorn==20.1.0 \
       eventlet>=0.24.1 \
       gevent>=1.4 \
       msgpack==0.6.2 \
       redis \
-      rrdtool \
+      rrdtool-bindings \
       python-ldap \
       mysqlclient \
       psycopg2==2.8.6 \
       django-cockroachdb==4.2.*
 
-ARG version=1.1.11
+ARG version=master
 
 # install whisper
-#ARG whisper_version=${version}
-ARG whisper_version=master
+ARG whisper_version=${version}
 ARG whisper_repo=https://github.com/graphite-project/whisper.git
 RUN git clone -b ${whisper_version} --depth 1 ${whisper_repo} /usr/local/src/whisper \
  && cd /usr/local/src/whisper \
  && . /opt/graphite/bin/activate \
+ && pip3 install --no-cache-dir -r requirements.txt \
  && python3 ./setup.py install $python_extra_flags
 
 # install carbon
-#ARG carbon_version=${version}
-ARG carbon_version=master
+ARG carbon_version=${version}
 ARG carbon_repo=https://github.com/graphite-project/carbon.git
 RUN . /opt/graphite/bin/activate \
  && git clone -b ${carbon_version} --depth 1 ${carbon_repo} /usr/local/src/carbon \
  && cd /usr/local/src/carbon \
- && pip3 install -r requirements.txt \
+ && pip3 install --no-cache-dir -r requirements.txt \
  && python3 ./setup.py install $python_extra_flags
 
 # install graphite
-#ARG graphite_version=${version}
-ARG graphite_version=master
+ARG graphite_version=${version}
 ARG graphite_repo=https://github.com/graphite-project/graphite-web.git
 RUN . /opt/graphite/bin/activate \
  && git clone -b ${graphite_version} --depth 1 ${graphite_repo} /usr/local/src/graphite-web \
  && cd /usr/local/src/graphite-web \
- && pip3 install -r requirements.txt \
+ && pip3 install --no-cache-dir -r requirements.txt \
  && python3 ./setup.py install $python_extra_flags
 
 # install statsd
@@ -178,3 +175,6 @@ VOLUME ["/opt/graphite/conf", "/opt/graphite/storage", "/opt/graphite/webapp/gra
 STOPSIGNAL SIGHUP
 
 ENTRYPOINT ["/entrypoint"]
+
+HEALTHCHECK --interval=60s --start-interval=20s --timeout=3s \
+  CMD curl -f http://localhost/ || exit 1
